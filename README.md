@@ -9,21 +9,12 @@
 
 ## Part 0 — Environment Setup 
 
-### How to Get an IBM i Virtual Machine (aka LPAR)
-#### Note: Only Instructors need to complete steps 1-4
+#### Note: Instructors need to complete steps laid out in the [Instructor Setup README](instructor-setup/README.md)
 
-To complete this lab, you need access to an IBM i environment. You can provision a free IBM i LPAR through **IBM TechZone**.
+To complete this lab, you need access to an IBM i environment. You will be given the access details from your instructor.
 
-1. Go to [https://techzone.ibm.com](https://techzone.ibm.com) and log in with your IBM ID.
-2. Search for **"IBM i"** in the catalog, and select an **IBM i 7.6** environment (e.g. *IBM i 7.6 - Sandbox*).  Go to this Collection: https://techzone.ibm.com/collection/techzone-certified-power-vs-base-vms and book your IBM i 7.6 Virtual Machine.
-
-3. Click **Reserve** and fill in the reservation form:
-   - **Purpose:** Demo / Self-Education / Test / Pilot
-   - **Opportunity information:** misc. information related to your activity.
-   - **Geography:** pick the region closest to you (AP, EU, Americas)
-4. Submit the reservation. Within a few minutes you'll receive an email with your LPAR's **hostname/IP Address**, **port**, **user profile**, **private key** and **password**.
-5. Keep these credentials handy — you'll need them in the next step to connect Bob IDE to your IBM i. By default this TechZone provisioned IBM i VM will be reachable through Https (443) and SSH (22). Bob and Code for i extension uses ssh. If you want to access your VM with other protocols and services (5250, MCP, database etc.) , you'll have to establish a reverse ssh tunnel as mentioned [here on the IBM Cloud PVS docs web site](https://cloud.ibm.com/docs/power-iaas?topic=power-iaas-connect-ibmi#ssh-tunneling). Basically, each user must execute this ssh command on their laptop, and use the appropriate host and port to reach the corresponding service (In the example below, localhost on port 50000 with ACS for 5250, etc.).
-6. Download the private key from TechZone 
+1. Keep these credentials handy — you'll need them in the next step to connect Bob IDE to your IBM i. By default this TechZone provisioned IBM i VM will be reachable through Https (443) and SSH (22). Bob and Code for i extension uses ssh. If you want to access your VM with other protocols and services (5250, MCP, database etc.) , you'll have to establish a reverse ssh tunnel as mentioned [here on the IBM Cloud PVS docs web site](https://cloud.ibm.com/docs/power-iaas?topic=power-iaas-connect-ibmi#ssh-tunneling). Basically, each user must execute this ssh command on their laptop, and use the appropriate host and port to reach the corresponding service (In the example below, localhost on port 50000 with ACS for 5250, etc.).
+2. Download the private key from TechZone 
 ```bash
 #SSH TUNNEL (ACCESS TO 5250 and other services)
 chmod 600 ssh_private_key.pem
@@ -55,84 +46,9 @@ where `<myuser>@<myIPaddress>` is extracted from the information sent by TechZon
 
 ---
 
-### Restore the FLIGHT400 Application - Only Required for Instructors
+### Keep track of your assigned library number
 
-In this section you will deploy the FLIGHT400 save file to your IBM i LPAR and restore the application library. Please skip if Flight400 is already installed and go to the first Exercise.
-
-#### 1.1 — Create a new local workspace
-
-1. On your laptop, create an empty folder — for example `~/ibmi-lab`.
-2. In Bob IDE go to **File → Open Folder** and open this new folder.
-   Bob IDE will use this folder as your local workspace.
-3. Download [`Install-Flight400.sql`](https://github.com/bmarolleau/flight400-demo/blob/main/Install-Flight400.sql) from this repository into that folder.
-
-#### 1.2 — Download the save file into your workspace
-
-From the [Box Folder](https://ibm.box.com/v/flight400-box), download **`FLGHT400.FILE`** into the folder you just opened.
-This is an IBM i save file — a binary archive that contains the entire FLIGHT400 application (programs, source members, and database files), ready to be restored directly onto your LPAR.
-
-Both files should now be visible in the IBM Bob IDE **Explorer** panel:
-
-| File | Description |
-|---|---|
-| `FLGHT400.FILE` | IBM i save file containing the FLIGHT400 application |
-| `Install-Flight400.sql` | SQL script that restores the application on IBM i |
-
-#### 1.3 — Connect Bob IDE to your IBM i
-
-1. In the Bob IDE Activity Bar, click the **IBM i** icon (plug icon).
-2. Click **➕ New Connection** and enter the details from your TechZone reservation:
-   - **IP/Host:** `<your-lpar-public-ip-address>`
-   - **Username:** `<your-user-profile>`
-   - **Password:** `<your-password>`
-   - **Private Key:** If using PowerVS, let the **Password** field empty, download the private key, and set its path in this field.
-3. Click **Connect**. A green status bar message confirms a successful connection.
-
-#### 1.4 — Deploy the files to the IFS
-
-1. In the Bob IDE **Explorer**, right-click on **`Install-Flight400.sql`**.
-2. Choose **Deploy Selected Files**.  
-   This uploads the entire workspace to an IFS directory on IBM i. The target IFS path is shown in the output panel — note it (e.g. `/home/YOURUSER/builds/ibmi-lab`). Note: you may get an error in the bottom right of the Bob panel where you have to set the deploy location. Keep the default or change it, then click deploy. 
-3. In the Bob IDE **Explorer**, right-click on **`FLGHT400.FILE`**.
-4. Choose **Deploy Selected Files**. 
-   This uploads the entire workspace to an IFS directory on IBM i. The target IFS path is shown in the output panel — note it (e.g. `/home/YOURUSER/builds/ibmi-lab`).
-
-> ☕ This may take a minute or two, Perfect time for a coffee break! 
-
-The Save File `FLGHT400.FILE` contains the code, programs, database files etc. Everything you need to run the application. 
-
-#### 1.5 — Verify the upload in the IFS Browser
-
-1. In the IBM i sidebar, expand **IFS Browser**.
-2. Navigate to the upload directory noted above (e.g. `/home/YOURUSER/builds/ibmi-lab`).
-3. You should see `FLGHT400.FILE` and `Install-Flight400.sql` listed.
-4. Right-click on `FLGHT400.FILE` and choose **Copy Path**. It will look something like:  
-   `/home/YOURUSER/builds/ibmi-lab/FLGHT400.FILE`
-
-#### 1.6 — Update the SQL install script
-
-1. Open `Install-Flight400.sql` in the Bob IDE editor.
-2. Locate and update these variables at the top of the script:
-   - **`v_ifs_path`** — set to the IFS path you just copied (e.g. `/home/YOURUSER/builds/ibmi-lab/FLIGHT74.FILE`)
-   - **`v_rst_lib`** — target library name after restore (default: `FLGHT400`; change only if needed)
-   - **`v_owner`** — *(optional)* owner profile for the restored library. Leave as `NULL` to use `CURRENT_USER` automatically, or set explicitly (e.g. `DEFAULT 'MYPROFILE'`) to override.
-
-3. Save the file (`Ctrl+S` / `Cmd+S`).
-
-#### 1.7 — Run the SQL script
-
-1. In the **IFS Browser**, refresh the folder. You should see `Install-Flight400.sql` updated. **Note: If it is not automatically updated, manually edit them in the IFS as you did in 1.6 and save the file.**
-2. Right-click `Install-Flight400.sql` → **Run Action** → **Run SQL Statements**.
-3. Wait for the script to execute (create save file, restore library, update library ownership).  
-   The output console will confirm each step. The final `RSTLIB` command restores the full **FLIGHT400** library including programs, source members, and database files.
-
-#### 1.8 - Copy the Library if you need a multi-user setup
-1. Run CPYLIB FROMLIB(FLGHT400) TOLIB(FLGHT401) (and so on) so each participant gets their own isolated copy.
-2. To do this, I asked Bob to run the command: 
-   > Run CPYLIB FROMLIB(FLGHT400) TOLIB(FLGHT401) (and so on) so each participant gets their own isolated copy. I have X participants.
-3. Bob will create libraries FLGHT401 through FLGHT4nn, each containing a full copy of all objects from FLGHT400. Each participant should then have their assigned library (e.g. FLGHT401) added to their library list.
-
-> **Instructor:** Share this table with students before the lab starts. Each student uses their assigned library and dev port throughout all exercises.
+**Important** The instructor will create libraries FLGHT401 through FLGHT4nn, each containing a full copy of all objects from FLGHT400. Each participant will have their assigned library (e.g. FLGHT401) added to their library list. Throughout the labs, participants must only use **their assigned number** so everyone can enjoy the labs. 
 
 | Student # | Library | Dev Port | React App URL |
 |:---------:|---------|:--------:|---------------|
@@ -143,11 +59,9 @@ The Save File `FLGHT400.FILE` contains the code, programs, database files etc. E
 | … | … | … | … |
 | 50 | FLGHT450 | 3050 | http://localhost:3050 |
 
-> 💡 The **Dev Port** is only needed if you complete **Exercise 1 (Optional Warm-Up)**. When Bob asks you to pin your Vite dev server to a port, use the value from the **Dev Port** column above. Your React app will then be reachable at the **React App URL** shown — provided your SSH tunnel from step 6 is active.
+> 💡 The **Dev Port** is only needed if you complete **Exercise 1 (Optional Warm-Up)**. When Bob asks you to pin your Vite dev server to a port, use the value from the **Dev Port** column above. Your React app will then be reachable at the **React App URL** shown — provided your SSH tunnel from step 2 is active.
 
-> ✅ **End of Quick Setup.** The FLIGHT400 application is now restored on your IBM i in the `FLGHT4nn` library. 
-
-> ✅ Make sure `FLGHT4nn` library is in your library list (in the Code for i settings). 
+> ✅ Make sure your `FLGHT4nn` library is in your library list (in the Code for i settings). 
 
 > ✅  If you have a 5250 terminal to your IBM i available, you can add the library to your lib list with `ADDLIBLE FLGHT4nn` if not already done, and launch the application from the CL (Green Screen) command prompt :  `GO FLGHT4nn/FRSMAIN` .
 
@@ -170,23 +84,6 @@ That's all for now! You will explore the codebase more in Exercise 2.
 
 **Goal:** Use Bob in **IBM i Developer** mode to analyze the FLIGHT400 *Create Order* 5250 screen and generate a modern React web application styled with the IBM Carbon Design System, running directly on IBM i PASE. This will take about 30 minutes to complete.
 
-#### Instructor Prerequisites
-
-Before the lab, use Bob to install Node.js 22 once on the IBM i partition used for the workshop:
-
-> /QOpenSys/pkgs/bin/yum install -y nodejs22
-
-Verify installation:
-
-> /QOpenSys/pkgs/lib/nodejs22/bin/node --version
-> /QOpenSys/pkgs/lib/nodejs22/bin/node \
-   /QOpenSys/pkgs/lib/nodejs22/lib/node_modules/npm/bin/npm-cli.js --version
-
-Expected results:
-
-Node.js: v22.x.x
-npm: 10.x.x
-
 ![Flight400 React agentic demo](pics/Flight-react-agentic.png)
 
 ### Sharpen Your Skill 
@@ -205,7 +102,7 @@ Bob creates a new Skill that improves its awareness of PASE-specific details for
 
 ### Prompt in Bob Chat UI
 
-- Switch to IBM i Developer mode, then Click on the `+` button (top right) and select  the `FLGHT4nn` (library list) as a context of for the task. **Update the FLGHTnn's with your library number**, paste this [screenshot](./pics/flight400.png) in the prompt, and ask:
+- Switch to IBM i Developer mode, then Click on the `+` button (top right) and select  the `FLGHT4nn` (library list) as a context of for the task. **Update the FLGHT4nn's with your library number**, paste this [screenshot](./pics/flight400.png) in the prompt, and ask:
 
 > *"Given this screenshot of the 5250 flight order screen from the Application Flight4nn in @FLGHT4nn, Build a single-page React 18 + Vite 4 app on IBM i (PASE) using @carbon/react ^1.x with the g100 dark theme that modernises the IBM i 5250 screen shown in the attached screenshot. Create the app in the IFS at $HOME/flight4nn-frontend-apps/screen-name/. Use the g100 dark theme. All fields should have a list of values to select from. The dev server must run in the background using nohup … & and write output to /tmp/vite-dev.log. Pin the Vite dev server to port 30nn if available."*
 
@@ -238,7 +135,7 @@ cat /tmp/vite-dev.log
 Or ask Bob to start the dev server for you!
 
 Then open `http://localhost:30nn` in your browser. 
-**Note that port number, and application look & feel can differ. If your browser isn't showing anything, make sure you've completed step 6 of environment setup and it includes your port.**
+**Note that port number, and application look & feel can differ. If your browser isn't showing anything, make sure you've completed step 2 of environment setup and it includes your port.**
 
 
 ### Skills & Tools Used Behind the Scenes
@@ -278,8 +175,52 @@ Once you finish playing around with the react app. Ask Bob:
 
 > 💡 Again in the **Object Browser**, same library,  click on the program `FRS000.pgm`that is the flight reservation logon. You'll see in the `Detail` that this program was compiled in 1997, 30 years ago! 
 
-### 2b — *(Optional)* Generate Business Rules Extraction (5 minutes)
-Generate a functional business document using the Business Rules Extraction workflow.
+### 2b — Generate an Architecture Explanation with Bob
+
+1. Click the **Open Bob** icon in the top right Activity Bar to open the chat panel.
+2. If not already in **IBM i Developer** mode, switch to it using the mode selector at the top of the chat.
+3. Click the **`+` (Scope) button** and select **(QSYS) Library List** as the context scope. This gives Bob visibility into the full application structure. Again, make sure that `FLGHT4nn` is in the library list. Bob will first search in this list before searching in all QSYS. 
+4. Type the following prompt after replacing the nn with your library number:
+
+   > *"Generate a comprehensive architecture overview of the FLIGHT4nn application in QSYS in Markdown format. Include a high-level description, the main program flows, key programs and their roles, a Mermaid architecture diagram, and a summary of the database tables used."*
+
+5. Bob will analyze the programs, source members, and database files and return a structured Markdown document. Review the output — notice how it identifies the menu-driven architecture, the core transaction programs, and the underlying database schema.
+6. Copy the output to a new file `FLIGHT4nn-Architecture.md` in your workspace for reference.
+
+### 2c — Generate an Entity Relationship Diagram (Database Mode)
+
+1. In the Bob chat panel, switch to **IBM i Database** mode using the mode selector.
+2. Type the following slash command so that `/erd` is highlighted in the Bob chat:
+
+   > `/erd FLGHT4nn`
+
+3. Bob will introspect the physical files (`FLIGHTS`, `ORDERS`, `CUSTOMERS`, `AGENTS`, etc.) and their logical files, then generate a **Mermaid ERD** showing the relationships between entities.
+4. Observe the key relationships:
+   - `ORDERS` links to `FLIGHTS`, `CUSTOMERS`, and `AGENTS`
+   - `FLIGHTS` references `FRCITY` and `TOCITY` for departure/arrival cities
+5. Copy the ERD Markdown to your `FLIGHT4nn-Architecture.md` file.
+
+> ✅ You now have a living architecture document generated entirely from the legacy codebase — no manual reverse-engineering required!
+
+### 2d — *(Optional)* Generate a Draw.io Architecture Diagram
+
+> **Prerequisite:** Install the **Draw.io Integration** extension in Bob IDE (`Cmd+Shift+X` → search *"Draw.io Integration"* → Install).
+
+1. In the Bob chat panel (**IBM i Developer** mode), make sure the scope is set to **Library List (QSYS)**.
+2. Type:
+
+   > *"Analyze the FLIGHT4nn application from the library list and generate a draw.io architecture diagram showing the main programs, menus, and database files. Save the file as `FLGHT4nn-architecture.drawio` in `$HOME/docs/` on IBM i."*
+
+3. Bob introspects the library list, maps the program call graph and database relationships, and writes the `.drawio` XML file to `/home/<your-user>/docs/FLGHT4nn-architecture.drawio`.
+
+4. In the **IFS Browser**, navigate to `$HOME/docs/` and click `FLGHT4nn-architecture.drawio` to open it — the Draw.io Integration extension renders the diagram directly in the editor.
+
+> ✅ You now have a visual, editable architecture diagram of the legacy application — generated in seconds.
+
+![draw io](pics/drawIo.png)
+
+### 2e — *(Optional)* Generate Business Rules Extraction (5 minutes)
+Drill down on a specific member by generating a functional business document using the Business Rules Extraction workflow.
 
 1. Click the workflow icon at the top of the Bob panel, choose to run workflow in library list, and select **Business Rules Extraction**
 
@@ -299,50 +240,6 @@ When prompted, use the following selections:
 
 3. At the end, specify an output location on the IFS **unique to your library number**. For example: /home/ITZUSER/flght400/docs/business-rules/FRS401-2026-07-16T19-34-14.md
 ![IFS location](pics/IFS-location.png)
-
-### 2c — Generate an Architecture Explanation with Bob
-
-1. Click the **Open Bob** icon in the top right Activity Bar to open the chat panel.
-2. If not already in **IBM i Developer** mode, switch to it using the mode selector at the top of the chat.
-3. Click the **`+` (Scope) button** and select **(QSYS) Library List** as the context scope. This gives Bob visibility into the full application structure. Again, make sure that `FLGHTnn` is in the library list. Bob will first search in this list before searching in all QSYS. 
-4. Type the following prompt after replacing the nn with your library number:
-
-   > *"Generate a comprehensive architecture overview of the FLIGHT4nn application in QSYS in Markdown format. Include a high-level description, the main program flows, key programs and their roles, a Mermaid architecture diagram, and a summary of the database tables used."*
-
-5. Bob will analyze the programs, source members, and database files and return a structured Markdown document. Review the output — notice how it identifies the menu-driven architecture, the core transaction programs, and the underlying database schema.
-6. Copy the output to a new file `FLIGHT4nn-Architecture.md` in your workspace for reference.
-
-### 2d — Generate an Entity Relationship Diagram (Database Mode)
-
-1. In the Bob chat panel, switch to **IBM i Database** mode using the mode selector.
-2. Type the following slash command so that `/erd` is highlighted in the Bob chat:
-
-   > `/erd FLGHT4nn`
-
-3. Bob will introspect the physical files (`FLIGHTS`, `ORDERS`, `CUSTOMERS`, `AGENTS`, etc.) and their logical files, then generate a **Mermaid ERD** showing the relationships between entities.
-4. Observe the key relationships:
-   - `ORDERS` links to `FLIGHTS`, `CUSTOMERS`, and `AGENTS`
-   - `FLIGHTS` references `FRCITY` and `TOCITY` for departure/arrival cities
-5. Copy the ERD Markdown to your `FLIGHT4nn-Architecture.md` file.
-
-> ✅ You now have a living architecture document generated entirely from the legacy codebase — no manual reverse-engineering required!
-
-### 2e — *(Optional)* Generate a Draw.io Architecture Diagram
-
-> **Prerequisite:** Install the **Draw.io Integration** extension in Bob IDE (`Cmd+Shift+X` → search *"Draw.io Integration"* → Install).
-
-1. In the Bob chat panel (**IBM i Developer** mode), make sure the scope is set to **Library List (QSYS)**.
-2. Type:
-
-   > *"Analyze the FLIGHT4nn application from the library list and generate a draw.io architecture diagram showing the main programs, menus, and database files. Save the file as `FLGHTnn-architecture.drawio` in `$HOME/docs/` on IBM i."*
-
-3. Bob introspects the library list, maps the program call graph and database relationships, and writes the `.drawio` XML file to `/home/<your-user>/docs/FLGHT4nn-architecture.drawio`.
-
-4. In the **IFS Browser**, navigate to `$HOME/docs/` and click `FLGHT4nn-architecture.drawio` to open it — the Draw.io Integration extension renders the diagram directly in the editor.
-
-> ✅ You now have a visual, editable architecture diagram of the legacy application — generated in seconds.
-
-![draw io](pics/drawIo.png)
 
 ---
 
@@ -376,10 +273,6 @@ When prompted, use the following selections:
 
 Bob spins up a subagent to convert the fixed-format RPG to modern free-format ILE RPG.
 Then Bob runs the **Code for IBM i** compile action for ILE RPG, triggering a `CRTBNDRPG` command on your LPAR. Watch the output in the terminal panel. 
-  ```
-   > CRTBNDRPG PGM(FLGHT4nn/FRS409) SRCFILE(FLGHT4nn/QRPGSRC) SRCMBR(FRS409)
-   Program FRS409 created in library FLGHT4nn.
-   ```
 
 4. Bob will also prompt: **"Confirm Output Member Location"** — ensure the suggested location has the path with your library number and continue. Bob will use all its RPG skills to modernize this source code. Approve the requested tasks.
 
@@ -457,7 +350,7 @@ Bob should also identify the screen-field naming pattern, including `SFLGHT`, `S
 ### 4b - (Optional) Explore the 5250 screen using Access Client Solutions
 1. Install IBM i Access Client Solutions if you have not already
 2. Configure the environment according to TechZone.
-3. Make sure that the ssh command from step 6 of environment setup is still running
+3. Make sure that the ssh command from step 2 of environment setup is still running
 4. Set the IP Address to be 127.0.0.1 and the port to be 50000
 5. Open the 5250 Emulator. If it fails trying to use port 23, override it by opening the Communication tab > Configure and put 50000 as the Destination Port. 
 6. Type out the username and password
@@ -684,7 +577,7 @@ Bob should verify the exact commands against the environment before executing th
 
 ---
 
-### 4e — Validate the Result
+### 4h — Validate the Result
 
 Ask Bob:
 
@@ -712,7 +605,7 @@ Screen:    FRS021DF.SFLHRS
 
 ---
 
-### 4h — Look at the resulting changes
+### 4i — Look at the resulting changes
 
 Repeat steps 4a and optionally 4b. You should now see the new Flight Hours field on the flight schedule screen!
 
@@ -918,6 +811,103 @@ Bob will query `QSYS2.OBJECT_STATISTICS` filtering on object type `*PGM` in `FLG
 
 ---
 
+## Exercise 7 — RPGUnit Test Planning & Implementation
+
+**Goal:** Use Bob's guided RPGUnit workflows to build a structured test plan for an IBM i program, then implement and run the test suites. This exercise takes about 20 minutes to complete.
+
+These two workflows work together in sequence:
+- **RPGUnit Test Plan Creation** — analyzes your code's exported procedures and generates four types of structured Markdown documents: *Templates* (reusable blueprints), *Modules* (one doc per exported procedure, including flowcharts), *Test Suites* (planned test cases per module with inputs, assertions, and status), and *Test Utilities* (shared helper procedures). It runs any existing test suites first to determine the current test state.
+- **RPGUnit Test Suite Implementation** — reads those test plan documents, writes or updates the RPGUnit source members, creates or updates `testing.json`, runs the suites, and iterates until all newly generated tests pass. It surfaces any pre-existing failures and asks whether to fix them.
+
+### Prerequisites — Install RPGUnit
+
+1. **Install IBM i Testing Extension**
+   - Open VS Code Extensions, search for **"IBM i Testing"**, and click **Install**.
+
+2. **Install RPGUnit to IBM i**
+   - Connect to your IBM i.
+   - Open Code for IBM i connection settings (gear icon, bottom of screen).
+   - Navigate to the **Components** tab → **Add Component** → select **RPGUnit** → **Install**.
+
+3. **Update your library list** to include: `FLGHT4nn`, `RPGUNIT`, `QDEVTOOLS`.
+
+---
+
+### 7a — Create a New Source Member `CUSTCHK`
+
+Rather than modifying an existing program, you'll create a clean, standalone SQLRPGLE module with a single exported procedure — an ideal target for RPGUnit.
+
+1. In the **Object Browser**, find the `QRPGLESRC` folder inside your assigned `FLGHT4nn` library. Right-click it and select **New Member**.
+
+   ![New member dialog](pics/add-member.png)
+
+2. Enter the name **`CUSTCHK.SQLRPGLE`** and confirm.
+
+3. Paste the following source (starting from `**free` and ending with `end-proc;`) into the new member and save with **Ctrl/Cmd + S**:
+
+```rpgle
+**free
+ctl-opt nomain;
+
+dcl-proc checkCustomerExists export;
+  dcl-pi *n ind;
+    custId packed(9:0) const;
+  end-pi;
+
+  dcl-s rowCount int(10);
+
+  exec sql
+    select count(*)
+      into :rowCount
+      from CUSTOMRZ
+      where CUSTNO = :custId;
+
+  return (SQLCODE = 0 and rowCount > 0);
+end-proc;
+```
+
+This module is a clean target for the RPGUnit workflows: it's `NOMAIN`, has one exported procedure with a typed parameter and return value, contains no display file or interactive logic, and compiles naturally as a `*MODULE` or `*SRVPGM`.
+
+### 7b — Run the RPGUnit Test Plan Creation Workflow
+
+1. Click the workflow icon at the top of the Bob panel and choose **RPGUnit Test Plan Creation** in your library list.
+
+   ![workflows icon](pics/workflows-icon.png)
+
+2. Click **Get Started**.
+3. Select your library `FLGHT4nn`.
+4. When prompted for the IFS project directory, enter a path unique to your library (e.g., `/home/<user>/flght4nn`).
+5. If this is your first time, tell Bob to **create a new test plan** when asked.
+6. Keep the proposed test plan structure or adjust it to your preference. If you do change it, remember the values you picked.
+7. For the goal, select the **default recommended path**.
+8. Let Bob locate testable files automatically — it should find `CUSTCHK.SQLRPGLE` as the only suitable candidate.
+9. Select the exported procedure and click **Proceed**.
+10. Choose to **validate the environment** as recommended and proceed.
+11. Install RPGUnit and add to library list if prompted; do the same for `QDEVTOOLS`.
+
+Bob will write the test plan documents and store them in the IFS directory you specified. At the bottom of the chat panel, review the files it created — these Markdown documents will be used in Part c.
+
+> 💡 If Bob asks to run the RPGUnit Test Plan Creation workflow again at any point, select **No thanks**.
+
+### 7c — Run the RPGUnit Test Suite Implementation Workflow
+
+1. Click the workflow icon and choose **RPGUnit Test Suite Implementation** in your library list. Click **Proceed** since the required test plan was already created in step 7b.
+2. Select your library `FLGHT4nn`.
+3. When prompted for the IFS project directory, enter the same path used in step 7b.
+4. When locating test plan documents, confirm the path to the test suites is correct — Bob should pre-fill the correct default.
+5. Choose to **validate the environment**.
+6. If Bob prompts to download RPGUnit again, click **Install**, then **Cancel** on the follow-up popup that asks to delete the existing version.
+
+Bob will generate the test source members, run the suites, and iterate until the new tests pass or Bob discovers an error in the source code. Results appear in the **Test Results** tab at the bottom of your screen.
+
+![Tests pass](pics/tests-pass.png)
+
+> 💡 If any tests fail, ask Bob to explain the failure and help fix it.
+
+> ✅ You've used Bob's guided workflows to go from untested legacy RPG to a structured, executed RPGUnit test suite — without writing test boilerplate by hand.
+
+---
+
 ## Summary
 
 Congratulations! In this lab you:
@@ -931,5 +921,6 @@ Congratulations! In this lab you:
 | **Exercise 4** | Added a new field to a 5250 display file with Bob's help |
 | **Exercise 5** | Reviewed and optimized a SQL query using Bob's database tools |
 | **Exercise 6** | Queried your IBM i system using natural language |
+| **Exercise 7** | Created and implemented an RPGUnit test suite with Bob's guided workflows |
 
 > **Next steps:** Explore connecting the React app to live IBM i data via a Node.js or Java REST API, or dive deeper into the RPG modernization workflow for the other FLIGHT4nn programs.
