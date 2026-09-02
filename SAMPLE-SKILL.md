@@ -14,7 +14,7 @@ description: >
 This skill guides every step of building a React 18 + Vite 4 single-page application
 inside PASE on IBM i (os400, ppc64 BE). Follow the steps in order; each section calls
 out the exact command, the reason it is needed, and the gotchas that will otherwise
-silently break the build.
+silently break the build or hang the PASE execution channel.
 
 ---
 
@@ -34,25 +34,51 @@ Before writing any files use `ask_followup_question` to confirm:
 
 ## 1 — Check the environment
 
+IBM i PASE does **not** add `/QOpenSys/pkgs/bin` to PATH automatically. Always use
+fully-qualified paths and never assume `node`, `npm`, or `npx` are on PATH.
+
 ```bash
-node --version   # must be >= 18
-npm --version    # must be >= 9
+# /QOpenSys/pkgs/bin/node and /QOpenSys/pkgs/bin/npm are version-agnostic symlinks
+# created automatically when any versioned package is installed
+# (nodejs18, nodejs20, nodejs22, nodejs24 …).
+/QOpenSys/pkgs/bin/node --version   # must be >= 18
+/QOpenSys/pkgs/bin/npm  --version   # must be >= 9
 ```
 
-Run this with `execute_pase_command`. If Node is missing, stop and ask the user to
-install the IBM i Open Source Node.js package (`yum install nodejs22`).
+Run this with `execute_pase_command`. If `/QOpenSys/pkgs/bin/node` is missing, Node
+is not installed. Ask the user to install a versioned package — `yum install` does
+**not** have a generic `nodejs` meta-package on IBM i; they must pick a specific
+version (e.g. `yum install nodejs22.ppc64`). Available versions can be listed with:
+
+```bash
+yum search nodejs
+```
+
+Choose the highest available version that is >= 18 (nodejs18, nodejs20, nodejs22,
+nodejs24 …). Installing any of these creates the `/QOpenSys/pkgs/bin/node` and
+`/QOpenSys/pkgs/bin/npm` symlinks automatically.
+
+> **Symptom: `node: No such file or directory`** — This means PATH inheritance is
+> broken, not that Node is missing. Fix PATH once in every wrapper script rather than
+> modifying installed package files.
 
 ---
 
-## 2 — Scaffold with Vite
+## 2 — Scaffold with Vite (Non-Interactive)
+
+> **CRITICAL Gotcha — Interactive prompt hangs PASE execution:**
+> If the target folder exists or contains files, `npm create vite@4` stops and asks
+> `Target directory is not empty. Remove existing files and continue? (y/N)`. Because PASE
+> tool execution has no TTY interactive input, this **freezes the agent indefinitely**.
+> Always ensure the directory is clear or supply non-interactive arguments:
 
 ```bash
 cd <parent-dir>
+rm -rf <screen-name>
 npm create vite@4 <screen-name> -- --template react
 ```
 
-`npm create vite@4` scaffolds with `@vitejs/plugin-react`, `vite ^4`, and a minimal
-`src/` tree. Accept the defaults — do **not** install yet.
+Accept the defaults — do **not** install yet.
 
 ---
 
@@ -69,8 +95,8 @@ so a single `npm install` fetches everything:
   "description": "<description>",
   "type": "module",
   "scripts": {
-    "dev":     "ESBUILD_BINARY_PATH=$(node -e \"require.resolve('esbuild-wasm/bin/esbuild')\" | xargs) vite --host 0.0.0.0 --port <port>",
-    "build":   "ESBUILD_BINARY_PATH=$(node -e \"require.resolve('esbuild-wasm/bin/esbuild')\" | xargs) vite build",
+    "dev":     "ESBUILD_BINARY_PATH=$(node -e \"process.stdout.write(require.resolve('esbuild-wasm/bin/esbuild'))\") vite --host 0.0.0.0 --port <port>",
+    "build":   "ESBUILD_BINARY_PATH=$(node -e \"process.stdout.write(require.resolve('esbuild-wasm/bin/esbuild'))\") vite build",
     "preview": "vite preview --host 0.0.0.0 --port 4173"
   },
   "dependencies": {
@@ -93,6 +119,8 @@ so a single `npm install` fetches everything:
 Key points:
 - `esbuild-wasm` **must** be a devDependency — it is the WASM-based fallback for
   the native esbuild binary that does not exist on os400 ppc64 BE.
+- Use `process.stdout.write(...)` **without** `xargs` in scripts — `xargs` can
+  introduce unexpected whitespace or cause the command substitution to freeze in PASE.
 - `sass` is required for Carbon SCSS compilation.
 - The `dev` and `build` scripts set `ESBUILD_BINARY_PATH` via command substitution.
   This covers the Vite *transform* pipeline, but **not** Vite's internal
@@ -236,9 +264,9 @@ Key points:
 
 ---
 
-## 7 — Write the Carbon SCSS entry point
+## 7 — Carbon Theme Configuration & Dark Mode Gotchas
 
-Create `src/styles/theme.scss`:
+### A. SCSS Theme Entry (`src/styles/theme.scss`)
 
 ```scss
 // ── 1. Set theme BEFORE importing component styles (order is mandatory) ──────
@@ -250,24 +278,49 @@ Create `src/styles/theme.scss`:
 // ── 2. All Carbon component styles ───────────────────────────────────────────
 @use '@carbon/react/scss/components';
 
-// ── 3. Carbon grid / layout utilities (optional) ─────────────────────────────
+// ── 3. Carbon grid / layout utilities ────────────────────────────────────────
 @use '@carbon/react/scss/grid';
 
-// ── App-level resets ──────────────────────────────────────────────────────────
+// ── App-level resets & Dark theme background enforcement ─────────────────────
 *, *::before, *::after { box-sizing: border-box; }
+
+:root {
+  color-scheme: dark;
+}
 
 html, body, #root {
   height: 100%;
+  min-height: 100vh;
   margin: 0;
-  background-color: var(--cds-background);
-  color: var(--cds-text-primary);
+  background-color: #161616 !important;
+  color: #f4f4f4 !important;
   font-family: 'IBM Plex Sans', 'Helvetica Neue', Arial, sans-serif;
+}
+
+.cds--content {
+  background-color: #161616 !important;
+  color: #f4f4f4 !important;
+}
+
+.cds--header {
+  background-color: #161616 !important;
+  border-bottom: 1px solid #393939 !important;
+}
+
+.cds--tile {
+  background-color: #262626 !important;
 }
 ```
 
 **Critical ordering rule:** `@use '@carbon/react/scss/theme' with ($theme: ...)` must
 appear **before** `@use '@carbon/react/scss/components'`. Reversing the order silently
 falls back to the white theme regardless of the `$theme` value.
+
+> **Dark mode note:** For `g100` / `g90` themes, adding explicit hex overrides for
+> `background-color` and `color` (with `!important`) prevents browser-default white
+> backgrounds from bleeding through during initial paint or when Carbon's CSS variables
+> are not yet resolved. `color-scheme: dark` also signals the browser to render native
+> controls (scrollbars, form inputs) in dark style.
 
 Then import this file as the **first** import in `src/main.jsx`:
 
@@ -279,18 +332,51 @@ import App from './App.jsx';
 // ...
 ```
 
+### B. Wrap App in Carbon `<Theme>` (`src/App.jsx`)
+
+SCSS compilation sets Carbon variable defaults, but UI components require React Context
+to inherit tokens cleanly. Always wrap the root component in `<Theme>`:
+
+```jsx
+import React from 'react';
+import { Theme } from '@carbon/react';
+import ScreenName from './ScreenName.jsx';
+
+export default function App() {
+  return (
+    <Theme theme="g100">
+      <ScreenName />
+    </Theme>
+  );
+}
+```
+
+This ensures Carbon components receive the correct design tokens via React context,
+not just CSS variable inheritance.
+
 ---
 
-## 8 — Find the correct Carbon icon names
+## 8 — Carbon Component and Icon Gotchas
 
-Carbon icon exports are case-sensitive and do not always match intuitive names.
-A wrong name causes a hard Rollup build error:
+Carbon exports are case-sensitive. A wrong name causes a hard Rollup build error.
 
-```
-"Airplane" is not exported by node_modules/@carbon/icons-react/es/index.js
-```
+### Non-existent component exports
 
-Run this snippet to discover the correct name before adding any icon import:
+| What you might write | Correct alternative |
+|---|---|
+| `<Divider />` from `@carbon/react` | Does **not** exist in Carbon 11 — use `<hr className="cds--divider" />` or a CSS border utility |
+
+### Non-existent icon exports
+
+| What you might guess | Correct export name |
+|---|---|
+| `Airplane`  | `Plane`              |
+| `Refresh`   | `Renew`              |
+| `Users`     | `UserMultiple` or `UserAvatar` |
+| `Check`     | `Checkmark` or `CheckmarkFilled` |
+| `Airport`   | `AirlineManageGates` |
+
+Run this snippet to discover correct icon names before writing any import:
 
 ```bash
 node -e "
@@ -301,16 +387,6 @@ const names = Object.keys(icons);
 );
 "
 ```
-
-Common names that differ from intuition:
-
-| What you might guess | Correct export name |
-|---|---|
-| `Airplane`  | `Plane`              |
-| `Refresh`   | `Renew`              |
-| `Users`     | `UserMultiple`       |
-| `Check`     | `Checkmark`          |
-| `Airport`   | `AirlineManageGates` |
 
 Always verify before writing the import statement.
 
@@ -338,24 +414,148 @@ npm run build
 A successful build looks like:
 
 ```
-✓ 915 modules transformed.
-dist/index.html                   0.88 kB │ gzip:  0.50 kB
-dist/assets/index.css           731 kB    │ gzip: 77 kB
-dist/assets/index.js             10 kB    │ gzip:  3.3 kB
-dist/assets/carbon.js           229 kB    │ gzip: 74 kB
-✓ built in ~20s
+✓ 937 modules transformed.
+dist/index.html                   0.81 kB │ gzip:   0.44 kB
+dist/assets/index-2a7de2f0.css  804.15 kB │ gzip:  86.66 kB
+dist/assets/index-ec2d7c0d.js    13.33 kB │ gzip:   4.94 kB
+dist/assets/icons-08a3885d.js    18.44 kB │ gzip:   4.08 kB
+dist/assets/carbon-ccf7f292.js  413.64 kB │ gzip: 131.92 kB
+✓ built in ~24s
 ```
 
 ---
 
-## 11 — Start the dev server
+## 11 — Start the dev server in the background (Non-Blocking)
 
-```bash
-npm run dev
+> **CRITICAL — Do NOT use `nohup npm run dev < /dev/null &` on IBM i PASE.**
+>
+> Although this pattern works on Linux, it **silently fails or causes tool cancellation**
+> on IBM i PASE. The root cause: `npm run dev` spawns a subshell to evaluate the
+> `ESBUILD_BINARY_PATH=$(node -e "...")` command substitution inside `package.json`.
+> That subshell is **not** a child of the `nohup` process and does not inherit the
+> `< /dev/null` stdin redirect — its stdin stays tied to the PASE SSH pipe,
+> keeping the execution channel open. Bob's tool runner detects the hanging pipe
+> and cancels the call.
+
+### The correct pattern: `start-dev.sh`
+
+Always create a `start-dev.sh` launcher script in the project root. It resolves
+`ESBUILD_BINARY_PATH` **before** forking, then calls `node_modules/.bin/vite`
+directly — bypassing `npm run` and its subshell entirely.
+
+Write these three files with `write_stream_file`.
+
+**`build.sh`** — one-shot production build:
+
+```sh
+#!/bin/sh
+# build.sh — Production build wrapper for IBM i PASE
+export PATH=/QOpenSys/pkgs/bin:/QOpenSys/usr/bin:/usr/bin:/bin
+cd /home/<USER>/flight400-frontend-apps/<screen-name>
+export ESBUILD_BINARY_PATH=$(/QOpenSys/pkgs/bin/node \
+  -e "process.stdout.write(require.resolve('esbuild-wasm/bin/esbuild'))")
+/QOpenSys/pkgs/bin/node ./node_modules/.bin/vite build
 ```
 
-Access at `http://<ibmi-hostname>:<port>`. The `0.0.0.0` bind makes it reachable
-from any host on the network, not just `localhost` inside PASE.
+**`dev.sh`** — foreground dev server (used with `nohup … &` by the caller):
+
+```sh
+#!/bin/sh
+# dev.sh — Vite dev server for IBM i PASE (run via: nohup bash dev.sh > /tmp/vite-dev.log 2>&1 &)
+export PATH=/QOpenSys/pkgs/bin:/QOpenSys/usr/bin:/usr/bin:/bin
+cd /home/<USER>/flight400-frontend-apps/<screen-name>
+export ESBUILD_BINARY_PATH=$(/QOpenSys/pkgs/bin/node \
+  -e "process.stdout.write(require.resolve('esbuild-wasm/bin/esbuild'))")
+exec ./node_modules/.bin/vite --host 0.0.0.0 --port <port>
+```
+
+**`start-dev.sh`** — non-blocking launcher (Bob uses this to start the server as an agent action):
+
+```sh
+#!/bin/sh
+# start-dev.sh — Non-blocking Vite dev server launcher for IBM i PASE
+# Re-run this script any time you need to restart the dev server.
+export PATH=/QOpenSys/pkgs/bin:/QOpenSys/usr/bin:/usr/bin:/bin
+cd /home/<USER>/flight400-frontend-apps/<screen-name>
+export ESBUILD_BINARY_PATH=$(/QOpenSys/pkgs/bin/node \
+  -e "process.stdout.write(require.resolve('esbuild-wasm/bin/esbuild'))")
+nohup ./node_modules/.bin/vite --host 0.0.0.0 --port <port> \
+  > /tmp/vite-<screen-name>.log 2>&1 &
+echo $! > /tmp/vite-<screen-name>.pid
+echo "Started PID=$(cat /tmp/vite-<screen-name>.pid)"
+```
+
+Make all scripts executable:
+
+```bash
+chmod +x build.sh dev.sh start-dev.sh
+```
+
+**To build:** run `build.sh` directly or via Bob:
+
+```bash
+/QOpenSys/pkgs/bin/bash build.sh
+```
+
+**To start dev server** (background, non-blocking):
+
+```bash
+nohup /QOpenSys/pkgs/bin/bash dev.sh > /tmp/vite-dev.log 2>&1 &
+```
+
+Or ask Bob to run `start-dev.sh` — it handles the `nohup` internally.
+
+Check the server came up:
+
+```bash
+sleep 4 && cat /tmp/vite-<screen-name>.log
+```
+
+A successful start looks like:
+
+```
+  VITE v4.5.x  ready in 2999 ms
+
+  ➜  Local:   http://localhost:3000/
+  ➜  Network: http://10.3.4.2:3000/
+```
+
+> **Port conflict:** If ports 3000–3002 are already in use, Vite auto-increments
+> (3001, 3002, 3003 …). Always check the log for the actual bound port and use
+> that in the final URL you report to the user.
+
+### Why this works where `npm run dev < /dev/null &` does not
+
+| Approach | Stdin behaviour | Safe? |
+|---|---|---|
+| `nohup npm run dev < /dev/null &` | `npm` gets `/dev/null`, but its **subshell** for `$(node -e ...)` inherits the original PASE pipe | ❌ Hangs / cancelled |
+| `start-dev.sh` with pre-resolved `ESBUILD_BINARY_PATH` + direct `./node_modules/.bin/vite` | No subshell at fork time; `nohup` fully detaches | ✅ Reliable |
+
+### Managing the running server
+
+```bash
+# Check if still running
+kill -0 $(cat /tmp/vite-<screen-name>.pid) 2>/dev/null && echo "running" || echo "stopped"
+
+# Tail live logs
+tail -f /tmp/vite-<screen-name>.log
+
+# Stop the server
+kill $(cat /tmp/vite-<screen-name>.pid)
+```
+
+---
+
+## PASE Execution Best Practices Quick-Reference
+
+| Problem / Trap | Root Cause | Solution |
+|---|---|---|
+| **PASE command hangs on `npm create`** | Interactive prompt when directory exists | Always run `rm -rf <dir>` before `npm create` |
+| **`nohup npm run dev &` gets cancelled** | `npm run` subshell keeps PASE pipe open | Use `start-dev.sh` — resolve env vars first, call `./node_modules/.bin/vite` directly |
+| **Command substitution freeze** | `xargs` buffering in PASE subshells | Use `process.stdout.write(...)` without `xargs` |
+| **Script parsing syntax errors** | Inlining multiline bash with JSX quotes via `node -e` | Use `write_stream_file` or `apply_diff` to create the script file first |
+| **Port conflict on startup** | Previous Vite instance still listening | Check `/tmp/vite-<screen-name>.log` for the actual bound port |
+| **`vite: not found` in shell script** | Shell scripts don't inherit npm PATH | Always use `./node_modules/.bin/vite`, never bare `vite` |
 
 ---
 
@@ -366,12 +566,15 @@ from any host on the network, not just `localhost` inside PASE.
 | `Error: Unsupported platform: os400 ppc64 BE` | esbuild native binary missing | Re-run `node patch-esbuild.cjs` (Step 5) |
 | `Cannot find module 'esbuild-wasm/bin/esbuild'` | `esbuild-wasm` not installed | `npm install --ignore-scripts esbuild-wasm@0.18.20` then re-patch |
 | `"<Icon>" is not exported by ...@carbon/icons-react` | Wrong icon name | Use Step 8 snippet to find the correct export |
+| `Divider` is not exported by `@carbon/react` | `Divider` does not exist in Carbon | Replace with `<hr className="cds--divider" />` |
 | SCSS `@use` resolution error for `@carbon/*` | `loadPaths` missing | Add `loadPaths: [path.resolve(__dirname, 'node_modules')]` |
-| Carbon renders in **white** despite `$g100` | Theme `@use` is after components | Move theme `@use` **before** `@use components` in `theme.scss` |
+| Carbon renders in **white** despite `$g100` | Theme `@use` is after components or `<Theme>` context is missing | Move theme `@use` **before** `@use components` in `theme.scss` AND wrap in `<Theme theme="g100">` in `App.jsx` |
 | `DEPRECATION WARNING [mixed-decls] is obsolete` | Listed in `silenceDeprecations` but removed from Sass | Remove `'mixed-decls'` from the list |
 | `DEPRECATION WARNING [legacy-js-api]` floods output | Vite 4 uses Sass legacy JS API | Add `'legacy-js-api'` to `silenceDeprecations` |
 | Dev server unreachable from browser | `host` defaults to `localhost` | Set `server: { host: '0.0.0.0' }` in vite config |
 | `npm install` hangs or download fails | esbuild/other postinstall scripts run | Always pass `--ignore-scripts` |
+| `nohup npm run dev` tool call cancelled by Bob | PASE pipe kept open by npm subshell | Use `start-dev.sh` pattern (Step 11) |
+| `node: No such file or directory` in any script | PATH not inherited in PASE shell | Export full PATH at top of every wrapper script (see Step 1) |
 
 ---
 
@@ -382,40 +585,27 @@ from any host on the network, not just `localhost` inside PASE.
 ├── index.html                  ← updated <title>, no vite.svg favicon
 ├── package.json                ← esbuild-wasm + @carbon/react + sass in deps
 ├── patch-esbuild.cjs           ← re-runnable os400 esbuild patch script
+├── build.sh                    ← production build wrapper (chmod +x, exports PATH)
+├── dev.sh                      ← foreground dev server wrapper (chmod +x, exports PATH)
+├── start-dev.sh                ← NON-BLOCKING server launcher for Bob (chmod +x)
 ├── vite.config.js              ← loadPaths + silenceDeprecations + manualChunks
 ├── node_modules/               ← installed with --ignore-scripts
 └── src/
     ├── main.jsx                ← theme.scss imported FIRST
-    ├── App.jsx
+    ├── App.jsx                 ← Wrapped in <Theme theme="g100">
     ├── <ScreenName>.jsx        ← page component using Carbon components
     └── styles/
-        └── theme.scss          ← theme @use BEFORE components @use
+        └── theme.scss          ← theme @use BEFORE components @use + dark resets
 ```
 
-## IBM i Node Runtime Requirements
-Before performing any React, Vite, Carbon, npm, esbuild, or Node.js task:
+## IBM i Node.js Runtime Requirements
 
-NODE=/QOpenSys/pkgs/lib/nodejs22/bin/node
-NPM_CLI=/QOpenSys/pkgs/lib/nodejs22/lib/node_modules/npm/bin/npm-cli.js
+These rules apply before any `npm`, `node`, `npx`, or `vite` command:
 
-Verify:
-
-`$NODE --version`
-`$NODE $NPM_CLI --version`
-
-Never assume node, npm, or npx are available in PATH.
-
-All shell scripts must export:
-
-PATH=/QOpenSys/pkgs/lib/nodejs22/bin:/QOpenSys/pkgs/bin:/QOpenSys/usr/bin:/usr/bin:/bin
-
-When starting development servers:
-
-- Use wrapper scripts.
-- Use nohup for background execution.
-- Log to /tmp/vite-dev.log.
-
-When a Node.js tool fails with:
-node: No such file or directory
-assume PATH inheritance is broken before assuming the package is broken.
-Prefer fixing PATH once globally rather than modifying installed dependencies.
+| Rule | Detail |
+|---|---|
+| **Never assume PATH** | PASE shells do not inherit `/QOpenSys/pkgs/bin` automatically |
+| **Version-agnostic Node binary** | `/QOpenSys/pkgs/bin/node` — symlink maintained by `yum`, works for nodejs18/20/22/… |
+| **Version-agnostic npm** | `/QOpenSys/pkgs/bin/npm` |
+| **Every wrapper script must export** | `PATH=/QOpenSys/pkgs/bin:/QOpenSys/usr/bin:/usr/bin:/bin` |
+| **Diagnosis** | `node: No such file or directory` → PATH broken, not package missing — fix PATH first |
