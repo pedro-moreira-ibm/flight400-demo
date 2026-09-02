@@ -128,7 +128,7 @@ cd /home/<your-user>/flight4nn-frontend-apps
 /QOpenSys/pkgs/bin/bash build.sh
 
 # Dev server (background — does not block your terminal)
-nohup /QOpenSys/pkgs/bin/bash dev.sh > /tmp/vite-dev.log 2>&1 &
+nohup /QOpenSys/pkgs/bin/bash start-dev.sh > /tmp/vite-dev.log 2>&1 &
 
 # Check which port Vite actually bound to:
 cat /tmp/vite-dev.log
