@@ -207,11 +207,12 @@ Before the lab, use Bob to install Node.js 22 once on the IBM i partition used f
 
 > /QOpenSys/pkgs/bin/yum install -y nodejs22
 
-Verify installation:
+Check Node.js and npm instalattion:
 
 > /QOpenSys/pkgs/lib/nodejs22/bin/node --version
-> /QOpenSys/pkgs/lib/nodejs22/bin/node \
-   /QOpenSys/pkgs/lib/nodejs22/lib/node_modules/npm/bin/npm-cli.js --version
+
+> /QOpenSys/pkgs/lib/nodejs22/bin/node /QOpenSys/pkgs/lib/nodejs22/lib/node_modules/npm/bin/npm-cli.js --version
+
 
 Expected results:
 
