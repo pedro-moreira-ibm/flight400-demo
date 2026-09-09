@@ -58,11 +58,11 @@
 That's all for now! You will explore the codebase more in Exercise 2. 
 ---
 
-## Exercise 2 — Code Explanation & Architecture Documentation
+## Exercise 1 — Code Explanation & Architecture Documentation
 
 **Goal:** Use Bob's IBM i Developer mode to automatically generate an architecture overview with diagrams, then switch to Database mode to produce an Entity Relationship Diagram. This exercise takes about 30 minutes to complete.
 
-### 2a — Browse the Application in the Object Browser
+### 1a — Browse the Application in the Object Browser
 
 1. In the IBM i sidebar, expand **User Library List** and **Object Browser**.
 2. Add **FLGHT4nn** to your library list if not done, and add a filter to the **FLGHT4nn** library in the Object Browser. To see everything, make sure the filter is *ALL, not just *SRCPF. Then navigate to the **FLGHT4nn** library in the Object Browser. You will see its contents organized by object type:
@@ -76,7 +76,7 @@ That's all for now! You will explore the codebase more in Exercise 2.
 
 > 💡 Again in the **Object Browser**, same library,  click on the program `FRS000.pgm`that is the flight reservation logon. You'll see in the `Detail` that this program was compiled in 1997, 30 years ago! 
 
-### 2b — Generate an Architecture Explanation with Bob
+### 1b — Generate an Architecture Explanation with Bob
 
 1. Click the **Open Bob** icon in the top right Activity Bar to open the chat panel.
 2. If not already in **IBM i Developer** mode, switch to it using the mode selector at the top of the chat.
@@ -88,7 +88,7 @@ That's all for now! You will explore the codebase more in Exercise 2.
 5. Bob will analyze the programs, source members, and database files and return a structured Markdown document. Review the output — notice how it identifies the menu-driven architecture, the core transaction programs, and the underlying database schema.
 6. Copy the output to a new file `FLIGHT4nn-Architecture.md` in your workspace for reference.
 
-### 2c — Generate an Entity Relationship Diagram (Database Mode)
+### 1c — Generate an Entity Relationship Diagram (Database Mode)
 
 1. In the Bob chat panel, switch to **IBM i Database** mode using the mode selector.
 2. Type the following slash command so that `/erd` is highlighted in the Bob chat:
@@ -103,7 +103,7 @@ That's all for now! You will explore the codebase more in Exercise 2.
 
 > ✅ You now have a living architecture document generated entirely from the legacy codebase — no manual reverse-engineering required!
 
-### 2d — *(Optional)* Generate a Draw.io Architecture Diagram
+### 1d — *(Optional)* Generate a Draw.io Architecture Diagram
 
 > **Prerequisite:** Install the **Draw.io Integration** extension in Bob IDE (`Cmd+Shift+X` → search *"Draw.io Integration"* → Install).
 
@@ -120,7 +120,7 @@ That's all for now! You will explore the codebase more in Exercise 2.
 
 ![draw io](pics/drawIo.png)
 
-### 2e — *(Optional)* Generate Business Rules Extraction (5 minutes)
+### 1e — *(Optional)* Generate Business Rules Extraction (5 minutes)
 Drill down on a specific member by generating a functional business document using the Business Rules Extraction workflow.
 
 1. Click the workflow icon at the top of the Bob panel, choose to run workflow in library list, and select **Business Rules Extraction**
@@ -144,11 +144,11 @@ When prompted, use the following selections:
 
 ---
 
-## Exercise 3 — Program-Level Explanation & Modernization
+## Exercise 2 — Program-Level Explanation & Modernization
 
 **Goal:** Understand an old OPM RPG program, then modernize it to free-format ILE RPG using the Bob modernization workflow. This exercise takes about 15 minutes to complete.
 
-### 3a — Understand FRS409 (Order Modification Confirmation)
+### 2a — Understand FRS409 (Order Modification Confirmation)
 
 1. Switch Bob back to **IBM i Developer** mode.
 2. In the Object Browser, navigate to `FLGHT4nn/QRPGSRC` and open `FRS409`.
@@ -158,7 +158,7 @@ When prompted, use the following selections:
 
 4. Bob will explain the program: `FRS409` is the **Order Modification Confirmation Window** — an OPM RPG program that displays a confirmation popup when a user modifies an order. It handles F3 (Exit), F12 (Cancel), and Enter key inputs via a `DOUEQ` loop with `CASEQ` dispatch subroutines, using a workstation data structure (`WSDS`) to capture the last key pressed.
 
-### 3b — Modernize FRS409 Using the RPG Modernization Workflow
+### 2b — Modernize FRS409 Using the RPG Modernization Workflow
 
 1. With `FRS409` still open in the editor, type in the Bob chat:
 
@@ -181,7 +181,7 @@ Then Bob runs the **Code for IBM i** compile action for ILE RPG, triggering a `C
 
 **Program FLGHT4nn/FRS409 was created successfully (highest severity: 00).**
 
-### 3c — Review the Modernization Summary
+### 2c — Review the Modernization Summary
 
 Bob automatically generates a **Modernization Summary Report** in the Bob chat. It includes:
 - What was changed and why
@@ -199,7 +199,7 @@ You can copy and paste this as `FRS409-Modernization-Report.md` in your workspac
 
 ---
 
-## Exercise 4 — Field Expansion: Add Total Flight Hours
+## Exercise 3 — Field Expansion: Add Total Flight Hours
 
 **Goal:** Use Bob to explore the Flight Maintenance application and add a new business field — *Total Flight Hours* — across its DDS and RPG components. The completed field will use the following names:
 
@@ -229,7 +229,7 @@ FLIGHTS → FLIGHTSZ → FRS021 → FRS021DF
 
 ---
 
-### 4a — Explore the Flight Maintenance Screen
+### 3a — Explore the Flight Maintenance Screen
 
 Begin with the part of the application visible to the user. In the Bob chat panel, enter:
 
@@ -248,20 +248,7 @@ Bob should also identify the screen-field naming pattern, including `SFLGHT`, `S
 
 ---
 
-### 4b - (Optional) Explore the 5250 screen using Access Client Solutions
-1. Install IBM i Access Client Solutions if you have not already
-2. Configure the environment according to TechZone.
-3. Make sure that the ssh command from step 2 of environment setup is still running
-4. Set the IP Address to be 127.0.0.1 and the port to be 50000
-5. Open the 5250 Emulator. If it fails trying to use port 23, override it by opening the Communication tab > Configure and put 50000 as the Destination Port. 
-6. Type out the username and password
-7. Once on the main screen, add your assigned library by typing or pasting `ADDLIBLE FLGHT4nn`
-8. Then, type or paste `CALL FLGHT4nn/FRS021`
-9. Explore the Flight Schedule screen and take note of the current fields showing.
-10. **Before moving on to 4c, Exit by typing `F3`**
-![ACS-green-screen](pics/ACS-green-screen.png)
-
-### 4c — Trace the Existing Pattern and Perform an Impact Analysis
+### 3b — Trace the Existing Pattern and Perform an Impact Analysis
 
 The new business requirement is to add *Total Flight Hours* to the Flight Maintenance application. Use these fixed requirements:
 
@@ -315,7 +302,7 @@ Bob may identify additional affected programs such as programs that use `FLIGHTS
 
 ---
 
-### 4d — Add the Database and Logical-File Fields
+### 3c — Add the Database and Logical-File Fields
 
 Ask Bob to prepare the database DDS changes:
 
@@ -358,7 +345,7 @@ If the changes are correct, tell Bob:
 
 ---
 
-### 4e — Add the Screen Field
+### 3d — Add the Screen Field
 
 Ask Bob:
 
@@ -390,7 +377,7 @@ If it is correct, tell Bob:
 
 ---
 
-### 4f — Update the RPG Program
+### 3e — Update the RPG Program
 
 Ask Bob:
 
@@ -428,7 +415,7 @@ If it is correct, tell Bob:
 
 ---
 
-### 4g — Build the Direct Demo Path
+### 3f — Build the Direct Demo Path
 
 Compile only the objects required for the Flight Maintenance demonstration. Ask Bob:
 
@@ -478,7 +465,7 @@ Bob should verify the exact commands against the environment before executing th
 
 ---
 
-### 4h — Validate the Result
+### 3g — Validate the Result
 
 Ask Bob:
 
@@ -506,15 +493,15 @@ Screen:    FRS021DF.SFLHRS
 
 ---
 
-### 4i — Look at the resulting changes
+### 3h — Look at the resulting changes
 
-Repeat steps 4a and optionally 4b. You should now see the new Flight Hours field on the flight schedule screen!
+Repeat steps 3a. You should now see the new Flight Hours field on the flight schedule screen!
 
 ![newfield](pics/newfield.png)
 
 ---
 
-> ✅ **Exercise 4 complete** — Bob explored the existing screen, traced the Mileage implementation, performed a focused impact analysis, updated the DDS and RPG sources, compiled the direct Flight Maintenance path, and validated the result. Total Flight Hours now flows end-to-end: `FLIGHTS.FLHRS` → `FLIGHTSZ.FHRS` → `FRS021` → `FRS021DF.SFLHRS`.
+> ✅ **Exercise 3 complete** — Bob explored the existing screen, traced the Mileage implementation, performed a focused impact analysis, updated the DDS and RPG sources, compiled the direct Flight Maintenance path, and validated the result. Total Flight Hours now flows end-to-end: `FLIGHTS.FLHRS` → `FLIGHTSZ.FHRS` → `FRS021` → `FRS021DF.SFLHRS`.
 
 **Follow-up Work**
 
@@ -522,15 +509,15 @@ Bob may identify other programs that use `FLIGHTS` or `FLIGHTSZ`. Those dependen
 
 ---
 
-## Exercise 5 — Database Optimization
+## Exercise 4 — Database Optimization
 
 **Goal:** Review a complex SQL query written by a junior developer, validate it, and apply Bob's index advisor to improve performance. This exercise takes about 15 minutes to complete.
 
-### 5a — Switch to IBM i Database Mode
+### 4a — Switch to IBM i Database Mode
 
 In the Bob chat panel, use the mode selector to switch to **IBM i Database** mode.
 
-### 5b — Review the Query with Bob
+### 4b — Review the Query with Bob
 
 A junior developer wrote the following query to summarize flight bookings per flight per agent. Change FLGHT4nn to your number and then paste it into the Bob chat using the `/review` slash command:
 
@@ -607,7 +594,7 @@ Bob may inspect the connected IBM i catalog to verify names and data types. Exac
 - ✅ FETCH FIRST 100 ROWS ONLY is a useful testing safeguard.
 - 💡 Bob may recommend using descriptive SQL column names instead of generated IBM i system names.
 
-### 5c — *(Optional)* Explain the Performance Characteristics
+### 4c — *(Optional)* Explain the Performance Characteristics
 
 After Bob has reviewed and corrected the query, ask:
 
@@ -623,7 +610,7 @@ Bob should identify that:
 
 ---
 
-### 5d — Run the Index Advisor Workflow
+### 4d — Run the Index Advisor Workflow
 
 Still in **IBM i Database** mode, click the workflow icon at the top of the Bob panel, choose to run workflow in library list, and select **SQL Index Strategy Advisor**.
 
@@ -691,7 +678,7 @@ After Bob has given the suggested indexes, ask:
 
 ---
 
-## Exercise 6 — Ask Bob About Your System
+## Exercise 5 — Ask Bob About Your System
 
 **Goal:** Use Bob in IBM i Developer mode to answer system-level questions using two natural language prompts. This exercise takes about 10 minutes to complete.
 
@@ -712,7 +699,7 @@ Bob will query `QSYS2.OBJECT_STATISTICS` filtering on object type `*PGM` in `FLG
 
 ---
 
-## Exercise 7 — RPGUnit Test Planning & Implementation
+## Exercise 6 — RPGUnit Test Planning & Implementation
 
 **Goal:** Use Bob's guided RPGUnit workflows to build a structured test plan for an IBM i program, then implement and run the test suites. This exercise takes about 20 minutes to complete.
 
@@ -734,7 +721,7 @@ These two workflows work together in sequence:
 
 ---
 
-### 7a — Create a New Source Member `CUSTCHK`
+### 6a — Create a New Source Member `CUSTCHK`
 
 Rather than modifying an existing program, you'll create a clean, standalone SQLRPGLE module with a single exported procedure — an ideal target for RPGUnit.
 
@@ -769,7 +756,7 @@ end-proc;
 
 This module is a clean target for the RPGUnit workflows: it's `NOMAIN`, has one exported procedure with a typed parameter and return value, contains no display file or interactive logic, and compiles naturally as a `*MODULE` or `*SRVPGM`.
 
-### 7b — Run the RPGUnit Test Plan Creation Workflow
+### 6b — Run the RPGUnit Test Plan Creation Workflow
 
 1. Click the workflow icon at the top of the Bob panel and choose **RPGUnit Test Plan Creation** in your library list.
 
@@ -790,9 +777,9 @@ Bob will write the test plan documents and store them in the IFS directory you s
 
 > 💡 If Bob asks to run the RPGUnit Test Plan Creation workflow again at any point, select **No thanks**.
 
-### 7c — Run the RPGUnit Test Suite Implementation Workflow
+### 6c — Run the RPGUnit Test Suite Implementation Workflow
 
-1. Click the workflow icon and choose **RPGUnit Test Suite Implementation** in your library list. Click **Proceed** since the required test plan was already created in step 7b.
+1. Click the workflow icon and choose **RPGUnit Test Suite Implementation** in your library list. Click **Proceed** since the required test plan was already created in step 6b.
 2. Select your library `FLGHT4nn`.
 3. When prompted for the IFS project directory, enter the same path used in step 7b.
 4. When locating test plan documents, confirm the path to the test suites is correct — Bob should pre-fill the correct default.
@@ -848,8 +835,6 @@ chmod 600 ./ssh_private_key.pem && ssh -N -L <DEV_PORT>:localhost:<DEV_PORT> -L 
 
 > 💡 Keep this terminal open while working on the lab. Closing the SSH session will close the tunnel.
 
-
-![alt text](pics/bob-lab-network.png)
 
 
 ### Sharpen Your Skill 
