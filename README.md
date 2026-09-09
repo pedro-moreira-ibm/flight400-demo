@@ -11,28 +11,6 @@
 
 #### Note: Instructors need to complete steps laid out in the [Instructor Setup README](instructor-setup/README.md)
 
-To complete this lab, you need access to an IBM i environment. You will be given the access details from your instructor.
-
-1. Keep these credentials handy — you'll need them in the next step to connect Bob IDE to your IBM i. By default this TechZone provisioned IBM i VM will be reachable through Https (443) and SSH (22). Bob and Code for i extension uses ssh. If you want to access your VM with other protocols and services (5250, MCP, database etc.) , you'll have to establish a reverse ssh tunnel as mentioned [here on the IBM Cloud PVS docs web site](https://cloud.ibm.com/docs/power-iaas?topic=power-iaas-connect-ibmi#ssh-tunneling). Basically, each user must execute this ssh command on their laptop, and use the appropriate host and port to reach the corresponding service (In the example below, localhost on port 50000 with ACS for 5250, etc.).
-2. Download the private key from TechZone 
-```bash
-#SSH TUNNEL (ACCESS TO 5250 and other services)
-chmod 600 ssh_private_key.pem
-```
-```bash
-##then (remove sudo on Windows and run your terminal as admin)
-sudo ssh -L 50000:localhost:23 -L 2001:localhost:2001 -L 449:localhost:449 -L 8470:localhost:8470 -L 8471:localhost:8471 -L 8472:localhost:8472 -L 2007:localhost:2007 -L 8473:localhost:8473 -L 8474:localhost:8474 -L 8475:localhost:8475 -L 8476:localhost:8476 -L 2003:localhost:2003 -L 2002:localhost:2002 -L 2006:localhost:2006 -L 2300:localhost:2300 -L 2323:localhost:2323 -L 2005:localhost:2005 -L 8076:localhost:8076 -L 3001:localhost:3001 -L 3002:localhost:3002 -L 3003:localhost:3003 -L 3004:localhost:3004 -L 3005:localhost:3005 -L 3006:localhost:3006 -L 3007:localhost:3007 -L 3008:localhost:3008 -L 3009:localhost:3009 -L 3010:localhost:3010 -L 3011:localhost:3011 -L 3012:localhost:3012 -L 3013:localhost:3013 -L 3014:localhost:3014 -L 3015:localhost:3015 -L 3016:localhost:3016 -L 3017:localhost:3017 -L 3018:localhost:3018 -L 3019:localhost:3019 -L 3020:localhost:3020 -L 3021:localhost:3021 -L 3022:localhost:3022 -L 3023:localhost:3023 -L 3024:localhost:3024 -L 3025:localhost:3025 -L 3026:localhost:3026 -L 3027:localhost:3027 -L 3028:localhost:3028 -L 3029:localhost:3029 -L 3030:localhost:3030 -L 3031:localhost:3031 -L 3032:localhost:3032 -L 3033:localhost:3033 -L 3034:localhost:3034 -L 3035:localhost:3035 -L 3036:localhost:3036 -L 3037:localhost:3037 -L 3038:localhost:3038 -L 3039:localhost:3039 -L 3040:localhost:3040 -L 3041:localhost:3041 -L 3042:localhost:3042 -L 3043:localhost:3043 -L 3044:localhost:3044 -L 3045:localhost:3045 -L 3046:localhost:3046 -L 3047:localhost:3047 -L 3048:localhost:3048 -L 3049:localhost:3049 -L 3050:localhost:3050 -o ExitOnForwardFailure=yes -o ServerAliveInterval=15 -o ServerAliveCountMax=3 <myuser>@<myIPaddress> -i ssh_private_key.pem
-```
-where `<myuser>@<myIPaddress>` is extracted from the information sent by TechZone , 
-
-> 💡 on MacOS/Linux, you may need to use sudo ssh instead of ssh in the command above. Remove sudo on Windows (run as Administrator instead).
-
-> 💡 If you don't have an IBM ID, create one for free at [https://www.ibm.com/account](https://www.ibm.com/account).
-
-> 💡 For 5250 or Database access to IBM i, please install the IBM supported [ACS client Solutions](https://www.ibm.com/support/pages/ibm-i-access-client-solutions).
-
-![alt text](pics/bob-lab-network.png)
-
 ---
 
 ### Install the Premium Package for i / IBM i Developer Pack for VS Code and Bob IDE
@@ -78,85 +56,6 @@ where `<myuser>@<myIPaddress>` is extracted from the information sent by TechZon
 4. Then, add your library to the user library list.
 ![add library](pics/add-library.png)
 That's all for now! You will explore the codebase more in Exercise 2. 
----
-
-## Exercise 1 — Optional Warm-Up: Generate a React Carbon App from a Green Screen
-
-**Goal:** Use Bob in **IBM i Developer** mode to analyze the FLIGHT400 *Create Order* 5250 screen and generate a modern React web application styled with the IBM Carbon Design System, running directly on IBM i PASE. This will take about 30 minutes to complete.
-
-![Flight400 React agentic demo](pics/Flight-react-agentic.png)
-
-### Sharpen Your Skill 
-
-Before generating the React app, give Bob some extra context about running React + Vite on IBM i PASE by creating a small helper Skill.
-
-1. In Agent mode, click the **`+`** button (top right) and select **Local Workspace** as the task context.
-2. Open [SAMPLE-SKILL.md](./SAMPLE-SKILL.md), copy its entire content, and paste it into the chat prompt.
-3. Append the following instruction and send:
-
-> *"Create a skill from the pasted text."*
-
-### Expected Result
-
-Bob creates a new Skill that improves its awareness of PASE-specific details for React and Vite projects. This lightweight Skill will be picked up automatically in the next step.
-
-### Prompt in Bob Chat UI
-
-- Switch to IBM i Developer mode, then Click on the `+` button (top right) and select  the `FLGHT4nn` (library list) as a context of for the task. **Update the FLGHT4nn's with your library number**, paste this [screenshot](./pics/flight400.png) in the prompt, and ask:
-
-> **📝 Note:** Replace `nn` in `FLGHT4nn` with your team number (e.g. `FLGHT401`, `FLGHT402`…). Replace also `port 30nn` by the relevant dev port assigned to your library (e.g. `3001` for `FLGHT401`, `3002` for `FLGHT402`, ... .
-
-> *"Given this screenshot of the 5250 flight order screen from the Application Flight4nn in @FLGHT4nn, Build a single-page React 18 + Vite 4 app on IBM i (PASE) using @carbon/react ^1.x with dark theme that modernizes the IBM i 5250 screen shown in the attached screenshot. Create the app in the IFS at $HOME/flight4nn-frontend-apps/screen-name/. Use the g100 dark theme. All fields should have a list of values to select from. Pin the Vite dev server to port 30nn if available. Launch the server, and give the final URL."*
-
-![example of screenshot paste](pics/image.png)
-
-### Expected Result
-
-Bob generates a full React application, including:
-- Carbon components (`Tile`, `TextInput`, `RadioButtonGroup`, `Modal`, `Button`) mirroring the 5250 layout
-- Selection modals replacing DDS subfile windows
-- The RPG pricing formula ported to JavaScript
-- pure JavaScript, no native binaries, running natively in IBM i PASE
-
-To see what files Bob generated, click 'Show all' on the 'File Changed' item at the Bottom of the Bob Chat Panel.
-
-Start the app from your IBM i PASE shell:
-
-```bash
-cd /home/<your-user>/flight4nn-frontend-apps
-# Build
-/QOpenSys/pkgs/bin/bash build.sh
-
-# Dev server (background — does not block your terminal)
-nohup /QOpenSys/pkgs/bin/bash start-dev.sh > /tmp/vite-dev.log 2>&1 &
-
-# Check which port Vite actually bound to:
-cat /tmp/vite-dev.log
-```
-
-Or ask Bob to start the dev server for you!
-
-Then open `http://localhost:30nn` in your browser. 
-**Note that port number, and application look & feel can differ. If your browser isn't showing anything, make sure you've completed step 2 of environment setup and it includes your port.**
-
-
-### Skills & Tools Used Behind the Scenes
-
-In addition to the sample Skill we created in step 1, we've just used a set of unique Skills that are shipped with the Premium Package for i : 
-
-| Tool / Skill | Role |
-|---|---|
-| `dds-primer-basics` skill | Parses `FRS001DF.DSPF` — screen layout, field names, subfile windows |
-| `rpg-primer-basics` skill | Reads `FRS001.RPG` — extracts pricing logic and field definitions |
-| IFS write tools | Creates project files directly in `$HOME/flight4nn-react/` on IBM i |
-| IBM i PASE | Runs `npm install`, `npm run build`, `npm start` natively on IBM i |
-
-Once you finish playing around with the react app. Ask Bob:
-
-> Stop the web service for FLGHT4nn on port 30nn
-
-> ⚠️ This app runs with sample data only. The natural next step is to add a REST / Web Services layer connecting the React front end to the real IBM i business logic and Db2 for i database.
-
 ---
 
 ## Exercise 2 — Code Explanation & Architecture Documentation
@@ -907,6 +806,122 @@ Bob will generate the test source members, run the suites, and iterate until the
 > 💡 If any tests fail, ask Bob to explain the failure and help fix it.
 
 > ✅ You've used Bob's guided workflows to go from untested legacy RPG to a structured, executed RPGUnit test suite — without writing test boilerplate by hand.
+
+---
+
+## Optional Exercise: Generate a React Carbon App from a Green Screen
+
+**Goal:** Use Bob in **IBM i Developer** mode to analyze the FLIGHT400 *Create Order* 5250 screen and generate a modern React web application styled with the IBM Carbon Design System, running directly on IBM i PASE. This will take about 30 minutes to complete.
+
+![Flight400 React agentic demo](pics/Flight-react-agentic.png)
+
+### Environment setup
+
+1. Request the private key from the instructor and place the `ssh_private_key.pem` file in your lab folder.
+
+2. You wil have to create an SSH tunnel to the TechZone IBM i environment.
+
+The SSH tunnel forwards the services needed for this lab to your local machine:
+
+- `<DEV_PORT>` — your assigned development port, used for the React/Vite application.
+- `50000` — used for the IBM i 5250 connection.
+
+#### For Windows users:
+
+Open **PowerShell or Windows Terminal as Administrator**, navigate to your lab folder, and run:
+
+```bash
+ssh -N -L <DEV_PORT>:localhost:<DEV_PORT> -L 50000:localhost:23 -i .\ssh_private_key.pem <myuser>@<myIPaddress>
+```
+
+#### For macOS / Linux users:
+
+Open a terminal, navigate to your lab folder, and run:
+
+```bash
+chmod 600 ./ssh_private_key.pem && ssh -N -L <DEV_PORT>:localhost:<DEV_PORT> -L 50000:localhost:23 -i ./ssh_private_key.pem <myuser>@<myIPaddress>
+```
+
+> 💡 Replace `<DEV_PORT>` with the port assigned to your library. For example, `FLGHT401` uses port `3001`, `FLGHT402` uses port `3002`, and so on.
+
+> 💡 Replace `<myuser>@<myIPaddress>` with the connection information provided by TechZone.
+
+> 💡 Keep this terminal open while working on the lab. Closing the SSH session will close the tunnel.
+
+
+![alt text](pics/bob-lab-network.png)
+
+
+### Sharpen Your Skill 
+
+Before generating the React app, give Bob some extra context about running React + Vite on IBM i PASE by creating a small helper Skill.
+
+1. In Agent mode, click the **`+`** button (top right) and select **Local Workspace** as the task context.
+2. Open [SAMPLE-SKILL.md](./SAMPLE-SKILL.md), copy its entire content, and paste it into the chat prompt.
+3. Append the following instruction and send:
+
+> *"Create a skill from the pasted text."*
+
+### Expected Result
+
+Bob creates a new Skill that improves its awareness of PASE-specific details for React and Vite projects. This lightweight Skill will be picked up automatically in the next step.
+
+### Prompt in Bob Chat UI
+
+- Switch to IBM i Developer mode, then Click on the `+` button (top right) and select  the `FLGHT4nn` (library list) as a context of for the task. **Update the FLGHT4nn's with your library number**, paste this [screenshot](./pics/flight400.png) in the prompt, and ask:
+
+> **📝 Note:** Replace `nn` in `FLGHT4nn` with your team number (e.g. `FLGHT401`, `FLGHT402`…). Replace also `port 30nn` by the relevant dev port assigned to your library (e.g. `3001` for `FLGHT401`, `3002` for `FLGHT402`, ... .
+
+> *"Given this screenshot of the 5250 flight order screen from the Application Flight4nn in @FLGHT4nn, Build a single-page React 18 + Vite 4 app on IBM i (PASE) using @carbon/react ^1.x with dark theme that modernizes the IBM i 5250 screen shown in the attached screenshot. Create the app in the IFS at $HOME/flight4nn-frontend-apps/screen-name/. Use the g100 dark theme. All fields should have a list of values to select from. Pin the Vite dev server to port 30nn if available. Launch the server, and give the final URL."*
+
+![example of screenshot paste](pics/image.png)
+
+### Expected Result
+
+Bob generates a full React application, including:
+- Carbon components (`Tile`, `TextInput`, `RadioButtonGroup`, `Modal`, `Button`) mirroring the 5250 layout
+- Selection modals replacing DDS subfile windows
+- The RPG pricing formula ported to JavaScript
+- pure JavaScript, no native binaries, running natively in IBM i PASE
+
+To see what files Bob generated, click 'Show all' on the 'File Changed' item at the Bottom of the Bob Chat Panel.
+
+Start the app from your IBM i PASE shell:
+
+```bash
+cd /home/<your-user>/flight4nn-frontend-apps
+# Build
+/QOpenSys/pkgs/bin/bash build.sh
+
+# Dev server (background — does not block your terminal)
+nohup /QOpenSys/pkgs/bin/bash start-dev.sh > /tmp/vite-dev.log 2>&1 &
+
+# Check which port Vite actually bound to:
+cat /tmp/vite-dev.log
+```
+
+Or ask Bob to start the dev server for you!
+
+Then open `http://localhost:30nn` in your browser. 
+**Note that port number, and application look & feel can differ. If your browser isn't showing anything, make sure you've completed step 2 of environment setup and it includes your port.**
+
+
+### Skills & Tools Used Behind the Scenes
+
+In addition to the sample Skill we created in step 1, we've just used a set of unique Skills that are shipped with the Premium Package for i : 
+
+| Tool / Skill | Role |
+|---|---|
+| `dds-primer-basics` skill | Parses `FRS001DF.DSPF` — screen layout, field names, subfile windows |
+| `rpg-primer-basics` skill | Reads `FRS001.RPG` — extracts pricing logic and field definitions |
+| IFS write tools | Creates project files directly in `$HOME/flight4nn-react/` on IBM i |
+| IBM i PASE | Runs `npm install`, `npm run build`, `npm start` natively on IBM i |
+
+Once you finish playing around with the react app. Ask Bob:
+
+> Stop the web service for FLGHT4nn on port 30nn
+
+> ⚠️ This app runs with sample data only. The natural next step is to add a REST / Web Services layer connecting the React front end to the real IBM i business logic and Db2 for i database.
 
 ---
 
