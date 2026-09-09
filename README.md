@@ -1,10 +1,9 @@
 # IBM Bob - Premium Package for i
 
-> **Estimated time:** 2–3 hours  
-> **Prerequisites:** IBM Bob IDE installed, internet access, IBM i TechZone LPAR, and the Premium Package for i 
 
-![alt text](pics/flight400.png)
- 
+<p align="center">
+  <img src="pics/flight400.png" alt="IBM Bob - Premium Package for i">
+</p> 
 ---
 
 ## Part 0 — Environment Setup 
