@@ -4,6 +4,7 @@
 <p align="center">
   <img src="pics/flight400.png" alt="IBM Bob - Premium Package for i">
 </p> 
+
 ---
 
 ## Part 0 — Environment Setup 
