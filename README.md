@@ -5,6 +5,7 @@
   <img src="pics/flight400.png" alt="IBM Bob - Premium Package for i">
 </p> 
 ---
+
 ## Part 0 — Environment Setup 
 
 #### Note: Instructors need to complete steps laid out in the [Instructor Setup README](instructor-setup/README.md)
